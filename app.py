@@ -2,6 +2,13 @@ from flask import Flask, render_template, request, jsonify
 import os
 import boto3
 from datetime import datetime, timedelta, timezone
+import datetime
+import time
+from azure.identity import ClientSecretCredential
+from azure.mgmt.compute import ComputeManagementClient
+from azure.mgmt.monitor import MonitorManagementClient
+from azure.mgmt.monitor.models import Metric
+from azure.mgmt.network import NetworkManagementClient
 
 app = Flask(__name__)
 secret_key = os.urandom(24)
@@ -33,6 +40,19 @@ def monitor():
                 return jsonify({'error': 'Failed to retrieve instance details'}), 500
         else:
             return jsonify({'error': 'Invalid input for AWS'}), 400
+    elif cloud_provider=="azure":
+          azure_subscription_id= request.form.get('azure_subscription_id', '')
+          azure_clinet_id= request.form.get('azure_clinet_id', '')
+          azure_clinet_secret= request.form.get('azure_clinet_secret', '')
+          azure_tenant_id= request.form.get('azure_tenant_id', '')
+          azure_vm_name= request.form.get('azure_vm_name', '')
+          azure_resource_group= request.form.get('azure_resource_group', '')
+        
+          if azure_subscription_id and azure_clinet_id and azure_clinet_secret and azure_tenant_id and azure_vm_name and azure_resource_group:
+            cpu_usage, memory_usage_mb = get_azure_metric(azure_tenant_id,azure_clinet_id,azure_clinet_secret,azure_subscription_id,azure_resource_group,azure_vm_name)
+            return jsonify(cpu_usage, memory_usage_mb)
+
+
     else:
         return jsonify({'error': 'Invalid cloud provider'}), 400
 
@@ -131,6 +151,86 @@ def get_memory_utilization(access_key, secret_key, region, instance_id):
     except Exception as e:
         print(f"Error fetching memory utilization: {e}")
         return None
+
+def get_azure_metric(tenant_id,
+client_id,
+client_secret,
+subscription_id,
+resource_group_name,
+vm_name):
+
+# Authenticate with Azure
+    credential = ClientSecretCredential(tenant_id, client_id, client_secret)
+
+# Initialize the ComputeManagementClient
+    
+    compute_client = ComputeManagementClient(credential, subscription_id)
+
+# Initialize the MonitorManagementClient
+    monitor_client = MonitorManagementClient(credential, subscription_id)
+
+    # Initialize the NetworkManagementClient
+    network_client = NetworkManagementClient(credential, subscription_id)
+
+    # Fetch VM details
+    vm = compute_client.virtual_machines.get(resource_group_name, vm_name)
+
+    # Fetch the network interface associated with the VM
+    nic_id = vm.network_profile.network_interfaces[0].id
+    nic_name = nic_id.split('/')[-1]
+    nic = network_client.network_interfaces.get(resource_group_name, nic_name)
+
+    # Fetch the public IP address associated with the network interface
+    public_ip_id = nic.ip_configurations[0].public_ip_address.id
+    public_ip_name = public_ip_id.split('/')[-1]
+    public_ip = network_client.public_ip_addresses.get(resource_group_name, public_ip_name)
+
+    # Print the VM name and its public IP address
+    print(f"VM Name: {vm_name}")
+    print(f"Public IP: {public_ip.ip_address}")
+
+    # Continuously monitor CPU and memory metrics in real-time
+    while True:
+        # Fetch CPU and memory metrics
+        metric_definitions = monitor_client.metric_definitions.list(resource_uri=vm.id)
+        cpu_metric = next((m for m in metric_definitions if m.name.value == 'Percentage CPU'), None)
+        memory_metric = next((m for m in metric_definitions if m.name.value == 'Available Memory Bytes'), None)
+
+        if cpu_metric and memory_metric:
+            # Correctly format the timespan
+            end_time = datetime.datetime.utcnow().isoformat()
+            start_time = (datetime.datetime.utcnow() - datetime.timedelta(minutes=5)).isoformat()  # Fetch metrics for the last 5 minutes
+            timespan = f"{start_time}/{end_time}"
+
+            cpu_metrics = monitor_client.metrics.list(
+                resource_uri=vm.id,
+                metricnames=cpu_metric.name.value,
+                timespan=timespan,
+                interval='PT1M',  # Fetch metrics at 1-minute intervals
+                aggregation='Average'
+            )
+            memory_metrics = monitor_client.metrics.list(
+                resource_uri=vm.id,
+                metricnames=memory_metric.name.value,
+                timespan=timespan,
+                interval='PT1M',  # Fetch metrics at 1-minute intervals
+                aggregation='Average'
+            )
+
+            cpu_usage = cpu_metrics.value[0].timeseries[0].data[0].average
+            memory_usage_bytes = memory_metrics.value[0].timeseries[0].data[0].average
+
+            # Convert memory usage to megabytes
+            memory_usage_mb = memory_usage_bytes / (1024 * 1024)
+            return cpu_usage, memory_usage_mb
+            # # Print the CPU and memory usage metrics
+            # print(f"CPU Usage: {cpu_usage:.2f}%")
+            # print(f"Memory Usage: {memory_usage_mb:.2f} MB")
+        else:
+            print("Metrics not found")
+
+        # Wait for 1 minute before fetching metrics again
+        time.sleep(60)
 
 if __name__ == '__main__':
     app.run(debug=True)

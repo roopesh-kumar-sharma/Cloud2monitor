@@ -1,124 +1,322 @@
 <!-- templates/dashboard.html -->
-
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cloud Monitor Dashboard</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.30.0/dist/apexcharts.min.css">
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/apexcharts@3.30.0/dist/apexcharts.min.css"
+    />
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
-        body {
-            padding: 20px;
-        }
-        h1 {
-            color: #1e67c7;
-            margin-bottom: 30px;
-            text-decoration: dashed;
-        }
+      body {
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      h1 {
+        color: #1e67c7;
+        margin-bottom: 30px;
+        text-decoration: dashed;
+      }
+      .monitor-form {
+        display: flex;
+        height: fit-content;
+        padding: 20px;
+      }
+      .form-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-items: center;
+        border: 1px solid #ccc;
+        padding: 20px;
+        background-color: #1a2226;
+        width: 700px;
+      }
+      .fullflex {
+        width: 100%;
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        flex-direction: column;
+        color: white;
+        font-size: 16px;
+        font-weight: 400;
+        margin-top: 15px;
+      }
+      .form-group {
+        width: 100%;
+        padding: 10px;
+      }
+      .fullflex input {
+        width: 100%;
+        padding: 5px;
+        border-bottom: 1px solid #267e97;
+        border-top: none;
+        border-left: none;
+        border-right: none;
+        background-color: #1a2226;
+        color: white;
+      }
+      .fullflex input:focus {
+        outline: none;
+        background-color: #1a2226;
+        color: white;
+      }
+      .fullflex select {
+        width: 100%;
+        padding: 5px;
+        border-radius: 5px;
+        border-bottom: 1px solid #267e97;
+        border-top: none;
+        border-left: none;
+        border-right: none;
+        background-color: #1a2226;
+        color: white;
+      }
+      .fullflex label {
+        font-weight: 600;
+      }
+      .c-button {
+        background-color: #267e97;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        width: 180px;
+        cursor: pointer;
+        margin-top: 20px;
+        float: right;
+      }
+      .c-button:hover {
+        transform: scale(1.1);
+      }
+      .monitor-container {
+        display: none;
+        flex-direction: column;
+        width: 500px;
+        padding: 20px;
+        background-color: #1a2226;
+        color: white;
+        margin-top: 20px;
+      }
+      .btn-container {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        gap: 10px;
+      }
     </style>
-
-</head>
-<body>
-    <h1 align="center">Cloud Monitor Dashboard</h1>
-
-    <form id="monitor-form" target="_blank">
-        <div class="form-group">
-            <label for="cloud_provider">Cloud Provider:</label>
-            <select id="cloud_provider" name="cloud_provider" class="form-control" required>
-                <option value="aws">AWS</option>
-                <option value="azure">Azure</option>
-                <option value="gcp">GCP</option>
-            </select>
+  </head>
+  <body style="background-color: #222d32">
+    <form
+      id="monitor-form"
+      class="form-container"
+      target="_blank"
+      style="
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-items: center;
+      "
+    >
+      <h1 align="center" style="color: white">Cloud Monitor Dashboard</h1>
+      <div class="fullflex" style="padding: 0px 10px">
+        <label for="cloud_provider">Cloud Provider:</label>
+        <select
+          id="cloud_provider"
+          name="cloud_provider"
+          class="form-control"
+          required
+        >
+          <option value="aws">AWS</option>
+          <option value="azure">Azure</option>
+          <option value="gcp">GCP</option>
+        </select>
+      </div>
+      <div class="form-group" id="aws-fields">
+        <div class="fullflex">
+          <label for="aws_access_key">AWS Access ID:</label>
+          <input
+            type="text"
+            id="aws_access_key"
+            name="aws_access_key"
+            class="form-control"
+            required
+          />
         </div>
-
-        <div class="form-group" id="aws-fields">
-            <label for="aws_access_key">AWS Access ID:</label>
-            <input type="text" id="aws_access_key" name="aws_access_key" class="form-control" required>
-
-            <label for="aws_secret_key">AWS Secret Key:</label>
-            <input type="text" id="aws_secret_key" name="aws_secret_key" class="form-control" required>
-
-            <label for="aws_region">AWS Region:</label>
-            <input type="text" id="aws_region" name="aws_region" class="form-control" placeholder="Enter AWS Region" required>
-
-            <label for="instance_id">Instance ID:</label>
-            <input type="text" id="instance_id" name="instance_id" class="form-control" required>
+        <div class="fullflex">
+          <label for="aws_secret_key">AWS Secret Key:</label>
+          <input
+            type="text"
+            id="aws_secret_key"
+            name="aws_secret_key"
+            class="form-control"
+            required
+          />
         </div>
-
-        <div class="form-group" id="azure-fields" style="display: none;">
-            <label for="azure_vm_id">Azure VM ID:</label>
-            <input type="text" id="azure_vm_id" name="azure_vm_id" class="form-control">
-
-            <label for="azure_region">Azure Region:</label>
-            <input type="text" id="azure_region" name="azure_region" class="form-control" placeholder="Enter Azure Region">
+        <div class="fullflex">
+          <label for="aws_region">AWS Region:</label>
+          <input
+            type="text"
+            id="aws_region"
+            name="aws_region"
+            class="form-control"
+            placeholder="Enter AWS Region"
+            required
+          />
         </div>
-
-        <div class="form-group" id="gcp-fields" style="display: none;">
-            <label for="gcp_project_id">GCP Project ID:</label>
-            <input type="text" id="gcp_project_id" name="gcp_project_id" class="form-control">
-
-            <label for="gcp_instance_id">GCP Instance ID:</label>
-            <input type="text" id="gcp_instance_id" name="gcp_instance_id" class="form-control">
+        <div class="fullflex">
+          <label for="instance_id">Instance ID:</label>
+          <input
+            type="text"
+            id="instance_id"
+            name="instance_id"
+            class="form-control"
+            required
+          />
         </div>
+      </div>
 
-        <button type="button" onclick="monitor_instance()" class="btn btn-primary">Monitor</button>
+      <div class="form-group" id="azure-fields" style="display: none">
+        <div class="fullflex">
+            <div class="fullflex">
+                <label for="azure_subscription_id">Azure Subscription ID :</label>
+                <input type="text" id="azure_subscription_id" name="azure_subscription_id" class="form-control" placeholder="Enter Azure Subscription ID">
+    
+                <label for="azure_clinet_id">Azure Client ID  :</label>
+                <input type="text" id="azure_clinet_id" name="azure_clinet_id" class="form-control" placeholder="Enter Azure Client ID">
+    
+                <label for="azure_clinet_secret">Azure Client Secret :</label>
+                <input type="text" id="azure_clinet_secret" name="azure_clinet_secret" class="form-control" placeholder="Enter Azure Client Secret">
+       
+                <label for="azure_tenant_id">Azure Tenant ID :</label>
+                <input type="text" id="azure_tenant_id" name="azure_tenant_id" class="form-control" placeholder="Enter Azure Tenant ID">
+    
+                <label for="azure_vm_name">Azure VM Name:</label>
+                <input type="text" id="azure_vm_name" name="azure_vm_name" class="form-control" placeholder="">
+    
+                <label for="azure_resource_group">Azure Resource Group:</label>
+                <input type="text" id="azure_resource_group" name="azure_resource_group" class="form-control" placeholder="">
+            </div>
+        </div>
+   
+    
+        
+      </div>
+
+      <div class="form-group" id="gcp-fields" style="display: none">
+        <label for="gcp_project_id">GCP Project ID:</label>
+        <input
+          type="text"
+          id="gcp_project_id"
+          name="gcp_project_id"
+          class="form-control"
+        />
+
+        <label for="gcp_instance_id">GCP Instance ID:</label>
+        <input
+          type="text"
+          id="gcp_instance_id"
+          name="gcp_instance_id"
+          class="form-control"
+        />
+      </div>
+
+      <button type="button" onclick="monitor_instance()" class="c-button">
+        Monitor
+      </button>
     </form>
-
-    <div id="monitor-results" class="mt-4">
+    <div class="monitor-container" id="monitor-containerid">
+      <div class="btn-container">
+        <button class="c-button" type="button" onclick="go_back()">
+          Go Back
+        </button>
+        <button class="c-button">Compare Metric</button>
+      </div>
+      <div id="monitor-results" class="mt-4">
         <!-- Real-time monitoring results will be displayed here -->
+      </div>
     </div>
 
-        <div id="chart"></div>
-        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.30.0/dist/apexcharts.min.js"></script>
+    <div id="chart"></div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.30.0/dist/apexcharts.min.js"></script>
     <script>
-        let intervalId;
+      let intervalId;
+      let goback=false;
+      function monitor_instance() {
+        clearInterval(intervalId); 
+        const form = document.getElementById("monitor-form");
+        const cloudProvider = form.elements["cloud_provider"].value;
+        const formData = new FormData();
 
-        function monitor_instance() {
-            const form = document.getElementById('monitor-form');
-            const cloudProvider = form.elements['cloud_provider'].value;
-            const formData = new FormData();
+        // Add common fields to formData
+        formData.append("cloud_provider", cloudProvider);
+        
+        // Add cloud provider-specific fields to formData
+        if (cloudProvider === "aws") {
+            formData.append("instance_id", form.elements["instance_id"].value);
+          formData.append(
+            "aws_access_key",
+            form.elements["aws_access_key"].value
+          );
+          formData.append(
+            "aws_secret_key",
+            form.elements["aws_secret_key"].value
+          );
+          formData.append("aws_region", form.elements["aws_region"].value);
+        } else if (cloudProvider === "azure") {
+          formData.append("azure_subscription_id", form.elements["azure_subscription_id"].value);
+          formData.append("azure_clinet_id", form.elements["azure_clinet_id"].value);
+          formData.append("azure_clinet_secret", form.elements["azure_clinet_secret"].value);
+          formData.append("azure_tenant_id", form.elements["azure_tenant_id"].value);
+          formData.append("azure_vm_name", form.elements["azure_vm_name"].value);
+          formData.append("azure_resource_group", form.elements["azure_resource_group"].value);
+        } else if (cloudProvider === "gcp") {
+          formData.append(
+            "gcp_project_id",
+            form.elements["gcp_project_id"].value
+          );
+          formData.append(
+            "gcp_instance_id",
+            form.elements["gcp_instance_id"].value
+          );
+        }
+        const updateIntervalSeconds = 5;
 
-            // Add common fields to formData
-            formData.append('cloud_provider', cloudProvider);
-            formData.append('instance_id', form.elements['instance_id'].value);
 
-            // Add cloud provider-specific fields to formData
-            if (cloudProvider === 'aws') {
-                formData.append('aws_access_key', form.elements['aws_access_key'].value);
-                formData.append('aws_secret_key', form.elements['aws_secret_key'].value);
-                formData.append('aws_region', form.elements['aws_region'].value);
-            } else if (cloudProvider === 'azure') {
-                formData.append('azure_vm_id', form.elements['azure_vm_id'].value);
-                formData.append('azure_region', form.elements['azure_region'].value);
-            } else if (cloudProvider === 'gcp') {
-                formData.append('gcp_project_id', form.elements['gcp_project_id'].value);
-                formData.append('gcp_instance_id', form.elements['gcp_instance_id'].value);
-            }
-
-            const updateIntervalSeconds = 5;
-            
-            if (intervalId) {
-                clearInterval(intervalId);
-            }
-
-            intervalId = setInterval(() => {
-                fetch('/monitor', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    const resultsDiv = document.getElementById('monitor-results');
-                    resultsDiv.innerHTML = `
+        if (intervalId) {
+          clearInterval(intervalId);
+        
+        }
+        console.log(goback, intervalId)
+      
+        intervalId = setInterval(() => {
+          fetch("/monitor", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+                document.getElementById("monitor-form").style.display="none";
+                document.getElementById("monitor-containerid").style.display = "flex";
+              const resultsDiv = document.getElementById("monitor-results");
+              resultsDiv.innerHTML = `
                         <p>Instance ID: ${data.instance_id}</p>
                         <p>Uptime: ${data.uptime}</p>
                         <p>Public IP Address: ${data.public_ip_address}</p>
@@ -126,66 +324,78 @@
                         <p>Memory Utilization: ${data.memory_utilization}</p>
                     `;
 
-                    // Display CPU metric in a chart
-                    displayCpuChart(data.cpu_utilization);
+              // Display CPU metric in a chart
+              displayCpuChart(data.cpu_utilization);
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+            });
+        }, updateIntervalSeconds * 1000);
+        
+      }
 
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-                
-            }, updateIntervalSeconds * 1000);
-        }
-
-        function displayCpuChart(cpuUtilization) {
+      function displayCpuChart(cpuUtilization) {
         const options = {
-            chart: {
-                type: 'line', // Change type to line
-                height: '300', // Set the height of the chart
-                width: '500',  // Set the width of the chart
+          chart: {
+            type: "line", // Change type to line
+            height: "300", // Set the height of the chart
+            width: "500", // Set the width of the chart
+          },
+          series: [
+            {
+              name: "CPU Utilization",
+              data: [cpuUtilization.replace("%", "")], // Convert CPU utilization to numeric value
             },
-            series: [{
-                name: 'CPU Utilization',
-                data: [cpuUtilization.replace('%', '')], // Convert CPU utilization to numeric value
-            }],
-            xaxis: {
-                categories: ['Current'], // Set x-axis categories, e.g., "Current"
+          ],
+          xaxis: {
+            categories: ["Current"], // Set x-axis categories, e.g., "Current"
+          },
+          yaxis: {
+            title: {
+              text: "CPU Utilization (%)", // Set y-axis title
             },
-            yaxis: {
-                title: {
-                    text: 'CPU Utilization (%)' // Set y-axis title
-                }
-            },
+          },
         };
 
-        const chart = new ApexCharts(document.getElementById('chart'), options);
+        const chart = new ApexCharts(document.getElementById("chart"), options);
         chart.render();
-        }
+      }
 
-        // Show/hide specific fields based on selection
-        document.getElementById('cloud_provider').addEventListener('change', function() {
-            const awsFields = document.getElementById('aws-fields');
-            const azureFields = document.getElementById('azure-fields');
-            const gcpFields = document.getElementById('gcp-fields');
+      function go_back() {
+        clearInterval(intervalId);
+        intervalId=null;
+        document.getElementById("monitor-form").reset(); 
+        document.getElementById("monitor-form").style.display="flex";
+        document.getElementById("monitor-containerid").style.display = "none";
+        // document.getElementById("monitor-results").style.display="none";
+      }
 
-            if (this.value === 'aws') {
-                awsFields.style.display = 'block';
-                azureFields.style.display = 'none';
-                gcpFields.style.display = 'none';
-            } else if (this.value === 'azure') {
-                awsFields.style.display = 'none';
-                azureFields.style.display = 'block';
-                gcpFields.style.display = 'none';
-            } else if (this.value === 'gcp') {
-                awsFields.style.display = 'none';
-                azureFields.style.display = 'none';
-                gcpFields.style.display = 'block';
-            } else {
-                awsFields.style.display = 'none';
-                azureFields.style.display = 'none';
-                gcpFields.style.display = 'none';
-            }
+      // Show/hide specific fields based on selection
+      document
+        .getElementById("cloud_provider")
+        .addEventListener("change", function () {
+          const awsFields = document.getElementById("aws-fields");
+          const azureFields = document.getElementById("azure-fields");
+          const gcpFields = document.getElementById("gcp-fields");
+
+          if (this.value === "aws") {
+            awsFields.style.display = "block";
+            azureFields.style.display = "none";
+            gcpFields.style.display = "none";
+          } else if (this.value === "azure") {
+            awsFields.style.display = "none";
+            azureFields.style.display = "block";
+            gcpFields.style.display = "none";
+          } else if (this.value === "gcp") {
+            awsFields.style.display = "none";
+            azureFields.style.display = "none";
+            gcpFields.style.display = "block";
+          } else {
+            awsFields.style.display = "none";
+            azureFields.style.display = "none";
+            gcpFields.style.display = "none";
+          }
         });
     </script>
-</body>
+  </body>
 </html>
