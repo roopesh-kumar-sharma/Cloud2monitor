@@ -106,7 +106,7 @@
       .monitor-container {
         display: none;
         flex-direction: column;
-        width: 500px;
+        width: 1000px;
         padding: 20px;
         background-color: #1a2226;
         color: white;
@@ -118,6 +118,48 @@
         margin-bottom: 20px;
         gap: 10px;
       }
+      #monitor-results pre{
+        color:#ccc;
+        font-size: large;
+      }
+      .chart-container{
+        display: flex;
+        flex-direction: column;
+        width: 1000px;
+        padding: 20px 100px;
+        align-items: center;
+        justify-content: start;
+
+      }
+      .result-container{
+        display: flex;
+        width: 100%;
+        padding: 10px 50px;
+        gap:20px;
+        font-size: 20px;
+      }
+      .fullflex2{
+        display: flex;
+        gap:10px;
+        font-size: 20px;
+      }
+      .flex-col{
+        flex-direction: column;
+        display: flex;
+        padding: 10px;
+        width: 50%;
+      }
+      .result-container:first-child{
+        border: 5px solid #267e97;
+      }
+      .result-container>div:first-child{
+        border-right: 4px solid #267e97 ;
+      }
+      .result-container p{
+        font-size: medium;
+        font-weight: 500;
+      }
+    
     </style>
   </head>
   <body style="background-color: #222d32">
@@ -144,6 +186,7 @@
           <option value="aws">AWS</option>
           <option value="azure">Azure</option>
           <option value="gcp">GCP</option>
+          <option value="both">Compare</option>
         </select>
       </div>
       <div class="form-group" id="aws-fields">
@@ -197,8 +240,8 @@
                 <input type="text" id="azure_subscription_id" name="azure_subscription_id" class="form-control" placeholder="Enter Azure Subscription ID">
     
                 <label for="azure_clinet_id">Azure Client ID  :</label>
-                <input type="text" id="azure_clinet_id" name="azure_clinet_id" class="form-control" placeholder="Enter Azure Client ID">
-    
+                <!-- <input type="text" id="azure_clinet_id" name="azure_clinet_id" class="form-control" placeholder="Enter Azure Client ID"> -->
+                <input type="text" id="azure_client_id" name="azure_client_id" class="form-control" placeholder="Enter Azure Client ID">
                 <label for="azure_clinet_secret">Azure Client Secret :</label>
                 <input type="text" id="azure_clinet_secret" name="azure_clinet_secret" class="form-control" placeholder="Enter Azure Client Secret">
        
@@ -235,167 +278,308 @@
         />
       </div>
 
-      <button type="button" onclick="monitor_instance()" class="c-button">
+      <button type="button" onclick="startMonitoring()" class="c-button">
         Monitor
       </button>
     </form>
     <div class="monitor-container" id="monitor-containerid">
       <div class="btn-container">
-        <button class="c-button" type="button" onclick="go_back()">
-          Go Back
-        </button>
-        <button class="c-button">Compare Metric</button>
+        <a href="../" class="c-button" style=" width:100px;">Back</a>
+
       </div>
-      <div id="monitor-results" class="mt-4">
+      <div id="monitor-results" class="mt-4" style="color: white;">
         <!-- Real-time monitoring results will be displayed here -->
       </div>
-    </div>
+      <!-- <div id="chart-main" style="display:flex; width: 1000px; align-items: center; justify-content: space-between;"> -->
+        <div class=" chart-container" style=" margin-bottom: 20px;">
+          <p id="chartTitle"></p>
+          <canvas id="myChart"></canvas>
+        </div>
+  
+        <div class=" chart-container">
+          <p id="chartTitle2"></p>
+          <canvas id="myChart2"></canvas>
+        </div>
+      <!-- </div> -->
+      </div>
+
 
     <div id="chart"></div>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.30.0/dist/apexcharts.min.js"></script>
-    <script>
-      let intervalId;
-      let goback=false;
-      function monitor_instance() {
-        clearInterval(intervalId); 
-        const form = document.getElementById("monitor-form");
-        const cloudProvider = form.elements["cloud_provider"].value;
-        const formData = new FormData();
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+   <script>
+    var intervalId; // Declare intervalId variable globally
 
-        // Add common fields to formData
-        formData.append("cloud_provider", cloudProvider);
-        
-        // Add cloud provider-specific fields to formData
-        if (cloudProvider === "aws") {
-            formData.append("instance_id", form.elements["instance_id"].value);
-          formData.append(
-            "aws_access_key",
-            form.elements["aws_access_key"].value
-          );
-          formData.append(
-            "aws_secret_key",
-            form.elements["aws_secret_key"].value
-          );
-          formData.append("aws_region", form.elements["aws_region"].value);
-        } else if (cloudProvider === "azure") {
-          formData.append("azure_subscription_id", form.elements["azure_subscription_id"].value);
-          formData.append("azure_clinet_id", form.elements["azure_clinet_id"].value);
-          formData.append("azure_clinet_secret", form.elements["azure_clinet_secret"].value);
-          formData.append("azure_tenant_id", form.elements["azure_tenant_id"].value);
-          formData.append("azure_vm_name", form.elements["azure_vm_name"].value);
-          formData.append("azure_resource_group", form.elements["azure_resource_group"].value);
-        } else if (cloudProvider === "gcp") {
-          formData.append(
-            "gcp_project_id",
-            form.elements["gcp_project_id"].value
-          );
-          formData.append(
-            "gcp_instance_id",
-            form.elements["gcp_instance_id"].value
-          );
-        }
-        const updateIntervalSeconds = 5;
+    function startMonitoring() {
+        clearInterval(intervalId); // Clear any previous interval
 
+        var cloudProvider = document.getElementById("cloud_provider").value;
 
-        if (intervalId) {
-          clearInterval(intervalId);
-        
-        }
-        console.log(goback, intervalId)
-      
-        intervalId = setInterval(() => {
-          fetch("/monitor", {
-            method: "POST",
-            body: formData,
-          })
-            .then((response) => response.json())
-            .then((data) => {
-                document.getElementById("monitor-form").style.display="none";
-                document.getElementById("monitor-containerid").style.display = "flex";
-              const resultsDiv = document.getElementById("monitor-results");
-              resultsDiv.innerHTML = `
-                        <p>Instance ID: ${data.instance_id}</p>
-                        <p>Uptime: ${data.uptime}</p>
-                        <p>Public IP Address: ${data.public_ip_address}</p>
-                        <p>CPU Utilization: ${data.cpu_utilization}</p>
-                        <p>Memory Utilization: ${data.memory_utilization}</p>
-                    `;
-
-              // Display CPU metric in a chart
-              displayCpuChart(data.cpu_utilization);
-            })
-            .catch((error) => {
-              console.error("Error:", error);
-            });
-        }, updateIntervalSeconds * 1000);
-        
-      }
-
-      function displayCpuChart(cpuUtilization) {
-        const options = {
-          chart: {
-            type: "line", // Change type to line
-            height: "300", // Set the height of the chart
-            width: "500", // Set the width of the chart
-          },
-          series: [
-            {
-              name: "CPU Utilization",
-              data: [cpuUtilization.replace("%", "")], // Convert CPU utilization to numeric value
-            },
-          ],
-          xaxis: {
-            categories: ["Current"], // Set x-axis categories, e.g., "Current"
-          },
-          yaxis: {
-            title: {
-              text: "CPU Utilization (%)", // Set y-axis title
-            },
-          },
+        // Prepare data based on the selected cloud provider
+        var formData = {
+            cloud_provider: cloudProvider,
         };
 
-        const chart = new ApexCharts(document.getElementById("chart"), options);
-        chart.render();
-      }
+        if (cloudProvider === "aws") {
+            formData.aws_access_key = document.getElementById("aws_access_key").value;
+            formData.aws_secret_key = document.getElementById("aws_secret_key").value;
+            formData.aws_region = document.getElementById("aws_region").value;
+            formData.instance_id = document.getElementById("instance_id").value;
+        } else if (cloudProvider === "azure") {
+            formData.azure_subscription_id = document.getElementById("azure_subscription_id").value;
+            // formData.azure_client_id = document.getElementById("azure_clinet_id").value;
+            formData.azure_client_id = document.getElementById("azure_client_id").value;
 
-      function go_back() {
-        clearInterval(intervalId);
-        intervalId=null;
-        document.getElementById("monitor-form").reset(); 
-        document.getElementById("monitor-form").style.display="flex";
-        document.getElementById("monitor-containerid").style.display = "none";
-        // document.getElementById("monitor-results").style.display="none";
-      }
+            formData.azure_client_secret = document.getElementById("azure_clinet_secret").value;
+            formData.azure_tenant_id = document.getElementById("azure_tenant_id").value;
+            formData.azure_vm_name = document.getElementById("azure_vm_name").value;
+            formData.azure_resource_group = document.getElementById("azure_resource_group").value;
+        }else{
+          formData.aws_access_key = document.getElementById("aws_access_key").value;
+            formData.aws_secret_key = document.getElementById("aws_secret_key").value;
+            formData.aws_region = document.getElementById("aws_region").value;
+            formData.instance_id = document.getElementById("instance_id").value;
 
-      // Show/hide specific fields based on selection
-      document
-        .getElementById("cloud_provider")
-        .addEventListener("change", function () {
-          const awsFields = document.getElementById("aws-fields");
-          const azureFields = document.getElementById("azure-fields");
-          const gcpFields = document.getElementById("gcp-fields");
 
-          if (this.value === "aws") {
+            formData.azure_subscription_id = document.getElementById("azure_subscription_id").value;
+            // formData.azure_client_id = document.getElementById("azure_clinet_id").value;
+            formData.azure_client_id = document.getElementById("azure_client_id").value;
+
+            formData.azure_client_secret = document.getElementById("azure_clinet_secret").value;
+            formData.azure_tenant_id = document.getElementById("azure_tenant_id").value;
+            formData.azure_vm_name = document.getElementById("azure_vm_name").value;
+            formData.azure_resource_group = document.getElementById("azure_resource_group").value;
+        }
+
+        // Send AJAX request to Flask app for monitoring data
+        $.ajax({
+            url: "/monitor",
+            type: "POST",
+            data: formData,
+           // Update the success and error callbacks of the AJAX request as follows:
+          success: function(response) {
+              if (!response.error) {
+                  displayMonitoringData(response);
+              } else {
+                  // Display error message in a more user-friendly way
+                  alert("Error: " + response.error);
+              }
+          },
+          error: function(xhr, status, error) {
+              // Display error message in a more user-friendly way
+              alert("AJAX Error: " + error);
+          }
+,
+        });
+    }
+    function transformString(str) {
+            // Split the string into words based on underscores
+            var words = str.split('_');
+
+            // Capitalize the first letter of each word
+            for (var i = 0; i < words.length; i++) {
+                words[i] = words[i].charAt(0).toUpperCase() + words[i].slice(1);
+            }
+
+            // Join the words back together with spaces
+            var result = words.join(' ');
+
+            return result;
+        }
+    function displayMonitoringData(data) {
+     
+      renderChart(data)
+      renderChart2(data)
+        // Display monitoring data on the dashboard
+        document.getElementById("monitor-form").style.display="none";
+        var monitorContainer = document.getElementById("monitor-containerid");
+        monitorContainer.style.display = "block";
+
+        // Set up interval for real-time updates
+        clearInterval(intervalId); // Clear any previous interval
+        intervalId = setInterval(function() {
+            // Send AJAX request to update monitoring data every 5 seconds
+            startMonitoring();
+        }, 5000);
+
+        // Update the HTML content of the monitor-results div to display the monitoring data
+        var monitorResults = document.getElementById("monitor-results");
+        if(typeof data==="object"){
+          console.log(data, "data")
+           var htmlContent = '<div class="result-container">';
+           htmlContent += '<div class="flex-col" style="border-right:0px;">';
+            for (var key in data) {
+              console.log("key", key)
+                if (data.hasOwnProperty(key)) {
+                    htmlContent += '<p class="fullflex2 gap-2 font-xl"><strong>' + transformString(key) + ':</strong> ' + data[key] + '</p><br>';
+                }
+            }
+            htmlContent += '</div>';
+            htmlContent += '</div>';
+        }
+        if(data.length>1){
+        var htmlContent = '<div class="result-container">';
+        data.forEach(function(obj) {
+            htmlContent += '<div class="flex-col">';
+            for (var key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    htmlContent += '<p class="fullflex2 gap-2 font-xl"><strong>' + transformString(key) + ':</strong> ' + obj[key] + '</p><br>';
+                }
+            }
+            htmlContent += '</div>';
+        });
+        htmlContent += '</div>';
+        }
+        monitorResults.innerHTML = htmlContent;
+    }
+
+    // Show/hide specific fields based on selection
+    document.getElementById("cloud_provider").addEventListener("change", function() {
+        const awsFields = document.getElementById("aws-fields");
+        const azureFields = document.getElementById("azure-fields");
+
+        if (this.value === "aws") {
             awsFields.style.display = "block";
             azureFields.style.display = "none";
-            gcpFields.style.display = "none";
-          } else if (this.value === "azure") {
+        } else if (this.value === "azure") {
             awsFields.style.display = "none";
             azureFields.style.display = "block";
-            gcpFields.style.display = "none";
-          } else if (this.value === "gcp") {
-            awsFields.style.display = "none";
-            azureFields.style.display = "none";
-            gcpFields.style.display = "block";
-          } else {
-            awsFields.style.display = "none";
-            azureFields.style.display = "none";
-            gcpFields.style.display = "none";
-          }
-        });
-    </script>
-  </body>
-</html>
+        }else {
+          awsFields.style.display = "block";
+          azureFields.style.display = "block";  
+        }
+    });
+
+
+    function renderChart(data){
+      if(data.length >1){
+      document.getElementById('chartTitle').innerText="Memory Utilization."
+      const ctx = document.getElementById('myChart');
+      let ww=data[0].memory_utilization;
+      let w2 = data[1].memory_utilization;
+      // Chart.helpers.each(Chart.instances, function (instance) {
+      //   instance.destroy();
+      // }); 
+
+ new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: ['AWS', 'AZURE'],
+    datasets: [{
+      label: 'Memory Utilization',
+      data: [ww,w2],
+      backgroundColor: [
+      'rgba(255, 99, 132, 0.2)',
+      'rgba(255, 159, 64, 0.2)',
+      'rgba(255, 205, 86, 0.2)',
+      'rgba(75, 192, 192, 0.2)',
+      'rgba(54, 162, 235, 0.2)',
+      'rgba(153, 102, 255, 0.2)',
+      'rgba(201, 203, 207, 0.2)'
+    ],
+      borderWidth: 1
+    }]
+  },
+  options: {
+    scales: {
+      y: {
+        beginAtZero: true
+      }
+    }
+  }
+});
+      }else{
+        console.log(data)
+      document.getElementById('chartTitle').innerText="Utilization."
+      const ctx = document.getElementById('myChart');
+      let ww=data.memory_utilization ===null ? 0 : data.memory_utilization;
+      let w2 = data.cpu_utilization===null ? 0: data.cpu_utilization;
+      console.log(ww,w2)
+      // Chart.helpers.each(Chart.instances, function (instance) {
+      //   instance.destroy();
+      // }); 
+
+ new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: ['Memory', 'CPU'],
+    datasets: [{
+      label: 'Utilization',
+      data: [ww,w2],
+      backgroundColor: [
+      'rgba(255, 99, 132, 0.2)',
+      'rgba(255, 159, 64, 0.2)',
+      'rgba(255, 205, 86, 0.2)',
+      'rgba(75, 192, 192, 0.2)',
+      'rgba(54, 162, 235, 0.2)',
+      'rgba(153, 102, 255, 0.2)',
+      'rgba(201, 203, 207, 0.2)'
+    ],
+      borderWidth: 1
+    }]
+  },
+  options: {
+    scales: {
+      y: {
+        beginAtZero: true
+      }
+    }
+  }
+});
+      }
+    }
+
+
+    function renderChart2(data){
+      if(data.length>1){
+      document.getElementById('chartTitle2').innerText="CPU Utilization."
+      const ctx = document.getElementById('myChart2');
+      let ww=data[0]?.cpu_utilization === null ? 0 : data[0].cpu_utilization ;
+      let w2 = data[1].cpu_utilization;
+      // Chart.helpers.each(Chart.instances, function (instance) {
+      //   instance.destroy();
+      // }); 
+      console.log(ww,w2, "ww")
+
+ new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: ['AWS', 'AZURE'],
+    datasets: [{
+      label: 'CPU Utilization',
+      data: [ww,w2],
+      backgroundColor: [
+      'rgba(255, 99, 132, 0.2)',
+      'rgba(255, 159, 64, 0.2)',
+      'rgba(255, 205, 86, 0.2)',
+      'rgba(75, 192, 192, 0.2)',
+      'rgba(54, 162, 235, 0.2)',
+      'rgba(153, 102, 255, 0.2)',
+      'rgba(201, 203, 207, 0.2)'
+    ],
+      borderWidth: 1
+    }]
+  },
+  options: {
+    scales: {
+      y: {
+        beginAtZero: true
+      }
+    }
+  }
+});
+      }
+    }
+
+
+
+
+</script>
+
+    </body>
+    </html>
+    

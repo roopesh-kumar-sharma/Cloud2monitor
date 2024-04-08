@@ -1,18 +1,21 @@
+import logging
 from flask import Flask, render_template, request, jsonify
 import os
-import boto3
-from datetime import datetime, timedelta, timezone
-import datetime
-import time
 from azure.identity import ClientSecretCredential
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.monitor import MonitorManagementClient
-from azure.mgmt.monitor.models import Metric
 from azure.mgmt.network import NetworkManagementClient
+from datetime import datetime, timedelta, timezone
+import boto3
+from flask_cors import CORS
 
 app = Flask(__name__)
 secret_key = os.urandom(24)
 app.secret_key = secret_key
+CORS(app)
+
+
+logging.basicConfig(level=logging.ERROR)
 
 @app.route('/')
 def index():
@@ -22,215 +25,271 @@ def index():
 def monitor():
     cloud_provider = request.form.get('cloud_provider', '')
 
-    if cloud_provider == 'aws':
+    if cloud_provider == "aws":
+        # Extract AWS form data
         aws_access_key = request.form.get('aws_access_key', '')
         aws_secret_key = request.form.get('aws_secret_key', '')
         aws_region = request.form.get('aws_region', '')
         instance_id = request.form.get('instance_id', '')
 
-        if aws_access_key and aws_secret_key and aws_region and instance_id:
-            instance_details = get_aws_instance_details(aws_access_key, aws_secret_key, aws_region, instance_id)
-            if instance_details:
-                cpu_utilization = get_cpu_utilization(aws_access_key, aws_secret_key, aws_region, instance_id)
-                memory_utilization = get_memory_utilization(aws_access_key, aws_secret_key, aws_region, instance_id)
-                instance_details['cpu_utilization'] = cpu_utilization
-                instance_details['memory_utilization'] = memory_utilization
-                return jsonify(instance_details)
-            else:
-                return jsonify({'error': 'Failed to retrieve instance details'}), 500
-        else:
-            return jsonify({'error': 'Invalid input for AWS'}), 400
-    elif cloud_provider=="azure":
-          azure_subscription_id= request.form.get('azure_subscription_id', '')
-          azure_clinet_id= request.form.get('azure_clinet_id', '')
-          azure_clinet_secret= request.form.get('azure_clinet_secret', '')
-          azure_tenant_id= request.form.get('azure_tenant_id', '')
-          azure_vm_name= request.form.get('azure_vm_name', '')
-          azure_resource_group= request.form.get('azure_resource_group', '')
-        
-          if azure_subscription_id and azure_clinet_id and azure_clinet_secret and azure_tenant_id and azure_vm_name and azure_resource_group:
-            cpu_usage, memory_usage_mb = get_azure_metric(azure_tenant_id,azure_clinet_id,azure_clinet_secret,azure_subscription_id,azure_resource_group,azure_vm_name)
-            return jsonify(cpu_usage, memory_usage_mb)
+        try:
+            if not (aws_access_key and aws_secret_key and aws_region and instance_id):
+                raise ValueError("Missing AWS credentials or instance details")
 
+            # Fetch AWS monitoring data
+            aws_data = get_aws_instance_details(aws_access_key, aws_secret_key, aws_region, instance_id)
+            aws_data['cpu_utilization'] = get_cpu_utilization(aws_access_key, aws_secret_key, aws_region, instance_id)
+            aws_data['memory_utilization'] = get_memory_utilization(aws_access_key, aws_secret_key, aws_region, instance_id)
+            return jsonify(aws_data)
+        except Exception as e:
+            logging.error(f"AWS error: {e}")
+            return jsonify({'error': str(e)}), 400
+
+    elif cloud_provider == 'azure':
+        # Extract Azure form data
+        azure_subscription_id = request.form.get('azure_subscription_id', '')
+        azure_client_id = request.form.get('azure_client_id', '')
+        azure_client_secret = request.form.get('azure_client_secret', '')
+        azure_tenant_id = request.form.get('azure_tenant_id', '')
+        azure_vm_name = request.form.get('azure_vm_name', '')
+        azure_resource_group = request.form.get('azure_resource_group', '')
+
+        try:
+            if not (azure_subscription_id and azure_client_id and azure_client_secret and azure_tenant_id and azure_vm_name and azure_resource_group):
+                raise ValueError("Missing Azure credentials or VM details")
+
+            # Fetch Azure monitoring data
+            azure_data = get_azure_metric(azure_tenant_id, azure_client_id, azure_client_secret, azure_subscription_id, azure_resource_group, azure_vm_name)
+            azure_data['cpu_utilization'] = get_cpu_utilization_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name)
+            azure_data['memory_utilization'] = get_memory_utilization_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name)
+            return jsonify(azure_data)
+        except Exception as e:
+            logging.error(f"Azure error: {e}")
+            return jsonify({'error': str(e)}), 400
 
     else:
-        return jsonify({'error': 'Invalid cloud provider'}), 400
+        aws_access_key = request.form.get('aws_access_key', '')
+        aws_secret_key = request.form.get('aws_secret_key', '')
+        aws_region = request.form.get('aws_region', '')
+        instance_id = request.form.get('instance_id', '')
+
+        azure_subscription_id = request.form.get('azure_subscription_id', '')
+        azure_client_id = request.form.get('azure_client_id', '')
+        azure_client_secret = request.form.get('azure_client_secret', '')
+        azure_tenant_id = request.form.get('azure_tenant_id', '')
+        azure_vm_name = request.form.get('azure_vm_name', '')
+        azure_resource_group = request.form.get('azure_resource_group', '')
+
+
+        try:
+            if not (aws_access_key and aws_secret_key and aws_region and instance_id):
+                raise ValueError("Missing AWS credentials or instance details")
+            if not (azure_subscription_id and azure_client_id and azure_client_secret and azure_tenant_id and azure_vm_name and azure_resource_group):
+                raise ValueError("Missing Azure credentials or VM details")
+
+            # Fetch Azure monitoring data
+            azure_data = get_azure_metric(azure_tenant_id, azure_client_id, azure_client_secret, azure_subscription_id, azure_resource_group, azure_vm_name)
+            azure_data['cpu_utilization'] = get_cpu_utilization_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name)
+            azure_data['memory_utilization'] = get_memory_utilization_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name)
+
+            # Fetch AWS monitoring data
+            aws_data = get_aws_instance_details(aws_access_key, aws_secret_key, aws_region, instance_id)
+            aws_data['cpu_utilization'] = get_cpu_utilization(aws_access_key, aws_secret_key, aws_region, instance_id)
+            aws_data['memory_utilization'] = get_memory_utilization(aws_access_key, aws_secret_key, aws_region, instance_id)
+            return jsonify(aws_data,azure_data)
+
+        except Exception as e:
+            logging.error(f"Azure error: {e}")
+            return jsonify({'error': str(e)}), 400
+
+def get_azure_metric(tenant_id, client_id, client_secret, subscription_id, resource_group_name, vm_name):
+    try:
+        credential = ClientSecretCredential(tenant_id, client_id, client_secret)
+        compute_client = ComputeManagementClient(credential, subscription_id)
+        monitor_client = MonitorManagementClient(credential, subscription_id)
+        network_client = NetworkManagementClient(credential, subscription_id)
+
+        vm = compute_client.virtual_machines.get(resource_group_name, vm_name)
+        # Initialize variables to store NIC and public IP information
+        nic_id = ""
+        public_ip_address = ""
+
+        for nic_ref in vm.network_profile.network_interfaces:
+            nic = network_client.network_interfaces.get(resource_group_name, nic_ref.id.split('/')[-1])
+            if nic.primary:
+                nic_id = nic_ref.id
+                if nic.ip_configurations[0].public_ip_address:
+                    public_ip = network_client.public_ip_addresses.get(resource_group_name, nic.ip_configurations[0].public_ip_address.id.split('/')[-1])
+                    public_ip_address = public_ip.ip_address
+                break
+
+        if not nic_id:
+            raise ValueError("Primary NIC not found")
+
+        # Fetch uptime - This is just a placeholder, you need to implement logic to fetch the actual uptime
+        uptime = "Not available"
+
+        return {
+            'vm_name': vm.name,
+            'uptime': uptime,
+            'public_ip_address': public_ip_address
+        }
+
+    except Exception as e:
+        logging.error(f"Azure error: {e}")
+        return {'error': str(e)}
+
+def get_cpu_utilization_azure(subscription_id, client_id, client_secret, tenant_id, resource_group_name, vm_name):
+    try:
+        credential = ClientSecretCredential(tenant_id, client_id, client_secret)
+        monitor_client = MonitorManagementClient(credential, subscription_id)
+
+        # Fetch CPU metrics
+        cpu_metrics = monitor_client.metrics.list(
+            resource_uri=f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Compute/virtualMachines/{vm_name}",
+            metricnames='Percentage CPU',
+            # timespan=timedelta(minutes=5),
+            timespan='PT5M',
+            interval='PT1M'
+        )
+        cpu_usage = cpu_metrics.value[0].timeseries[0].data[0].average
+
+
+        return cpu_usage
+    except Exception as e:
+        logging.error(f"Azure CPU utilization error: {e}")
+        return {'error': str(e)}
+
+def get_memory_utilization_azure(subscription_id, client_id, client_secret, tenant_id, resource_group_name, vm_name):
+    try:
+        credential = ClientSecretCredential(tenant_id, client_id, client_secret)
+        compute_client = ComputeManagementClient(credential, subscription_id)
+        monitor_client = MonitorManagementClient(credential, subscription_id)
+        network_client = NetworkManagementClient(credential, subscription_id)
+        vm = compute_client.virtual_machines.get(resource_group_name, vm_name)
+
+        # Fetch memory metrics
+        # memory_metrics = monitor_client.metrics.list(
+        #     resource_uri=f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Compute/virtualMachines/{vm_name}",
+        #     metricnames='Memory Usage',
+        #     # timespan=timedelta(minutes=5),
+        #     timespan='PT5M',
+        #     interval='PT1M'
+        # )
+        # memory_metrics = monitor_client.metrics.list(
+        #     resource_uri= vm_name.id,
+        #     metricnames=memory_metric.name.value,
+        #     timespan=timespan,
+        #     interval='PT1M',
+        #     aggregation='Average'
+        # )
+        metric_definitions = monitor_client.metric_definitions.list(resource_uri=vm.id)
+        memory_metric = next((m for m in metric_definitions if m.name.value == 'Available Memory Bytes'), None)
+        end_time = datetime.utcnow().isoformat()
+        start_time = (datetime.utcnow() - timedelta(minutes=5)).isoformat()
+        timespan = f"{start_time}/{end_time}"
+        memory_metrics = monitor_client.metrics.list(
+            resource_uri=vm.id,
+            metricnames=memory_metric.name.value,
+            timespan=timespan,
+            interval='PT1H',
+            aggregation='Average'
+    )
+
+        print(memory_metrics)
+        memory_usage_mb = memory_metrics.value[0].timeseries[0].data[0].average/10000000
+        print(memory_usage_mb)
+
+
+        return memory_usage_mb
+    except Exception as e:
+        logging.error(f"Azure memory utilization error: {e}")
+        return {'error': str(e)}
 
 def get_aws_instance_details(access_key, secret_key, region, instance_id):
     try:
+        if not (access_key and secret_key and region and instance_id):
+            raise ValueError("Missing AWS credentials or instance details")
+
         ec2 = boto3.client('ec2', aws_access_key_id=access_key, aws_secret_access_key=secret_key, region_name=region)
         response = ec2.describe_instances(InstanceIds=[instance_id])
         instance = response['Reservations'][0]['Instances'][0]
-        # Calculate uptime
         launch_time = instance['LaunchTime']
         now = datetime.now(timezone.utc)
         uptime = now - launch_time
 
-        # Convert uptime to days, hours, and minutes
         days = uptime.days
         hours, remainder = divmod(uptime.seconds, 3600)
         minutes, _ = divmod(remainder, 60)
         uptime_str = f"{days} days, {hours} hours, {minutes} minutes"
+
         return {
             'instance_id': instance['InstanceId'],
             'uptime': uptime_str,
-            'public_ip_address': instance.get('PublicIpAddress', 'N/A')
+            'public_ip_address': instance.get('PublicIpAddress', 'N/A'),
+            'instance_name': instance.get('InstanceType', 'N/A')  # adding instance type
         }
     except Exception as e:
-        print(f"Error: {e}")
-        return None
-
-# The rest of the code remains unchanged
-
+        logging.error(f"AWS error: {e}")
+        return {'error': str(e)}
 
 def get_cpu_utilization(access_key, secret_key, region, instance_id):
     try:
-        # Create a CloudWatch client
+        if not (access_key and secret_key and region and instance_id):
+            raise ValueError("Missing AWS credentials or instance details")
+
         cloudwatch = boto3.client('cloudwatch', aws_access_key_id=access_key, aws_secret_access_key=secret_key, region_name=region)
-
-        # Get the current datetime in UTC
         current_time = datetime.now(timezone.utc)
-
-        # Set start_time to 5 minutes before current time
         start_time = current_time - timedelta(minutes=5)
-
-        # Set end_time to the current time
         end_time = current_time
 
-        # Specify the metric data to retrieve
         response = cloudwatch.get_metric_statistics(
             Namespace='AWS/EC2',
             MetricName='CPUUtilization',
             Dimensions=[{'Name': 'InstanceId', 'Value': instance_id}],
             StartTime=start_time,
             EndTime=end_time,
-            Period=300,  # 5 minute intervals
+            Period=300,
             Statistics=['Average']
         )
 
-        # Extract and return the average CPU utilization
         if 'Datapoints' in response:
             datapoints = response['Datapoints']
             if datapoints:
-                return datapoints[-1]['Average']  # Get the latest datapoint
+                return datapoints[-1]['Average']
         return None
     except Exception as e:
-        print(f"Error fetching CPU utilization: {e}")
-        return None
+        logging.error(f"AWS CPU utilization error: {e}")
+        return {'error': str(e)}
 
 def get_memory_utilization(access_key, secret_key, region, instance_id):
     try:
-        # Create a CloudWatch client
+        if not (access_key and secret_key and region and instance_id):
+            raise ValueError("Missing AWS credentials or instance details")
+
         cloudwatch = boto3.client('cloudwatch', aws_access_key_id=access_key, aws_secret_access_key=secret_key, region_name=region)
-
-        # Get the current datetime in UTC
         current_time = datetime.now(timezone.utc)
-
-        # Set start_time to 5 minutes before current time
         start_time = current_time - timedelta(minutes=5)
-
-        # Set end_time to the current time
         end_time = current_time
 
-        # Specify the metric data to retrieve
         response = cloudwatch.get_metric_statistics(
             Namespace='CWAgent',
             MetricName='mem_used_percent',
             Dimensions=[{'Name': 'InstanceId', 'Value': instance_id}],
             StartTime=start_time,
             EndTime=end_time,
-            Period=300,  # 5 minute intervals
+            Period=300,
             Statistics=['Average']
         )
-        # Extract and return the average memory utilization
+
         if 'Datapoints' in response:
             datapoints = response['Datapoints']
             if datapoints:
-                return datapoints[-1]['Average']  # Get the latest datapoint
+                return datapoints[-1]['Average']
         return None
     except Exception as e:
-        print(f"Error fetching memory utilization: {e}")
-        return None
+        logging.error(f"AWS memory utilization error: {e}")
+        return {'error': str(e)}
 
-def get_azure_metric(tenant_id,
-client_id,
-client_secret,
-subscription_id,
-resource_group_name,
-vm_name):
-
-# Authenticate with Azure
-    credential = ClientSecretCredential(tenant_id, client_id, client_secret)
-
-# Initialize the ComputeManagementClient
-    
-    compute_client = ComputeManagementClient(credential, subscription_id)
-
-# Initialize the MonitorManagementClient
-    monitor_client = MonitorManagementClient(credential, subscription_id)
-
-    # Initialize the NetworkManagementClient
-    network_client = NetworkManagementClient(credential, subscription_id)
-
-    # Fetch VM details
-    vm = compute_client.virtual_machines.get(resource_group_name, vm_name)
-
-    # Fetch the network interface associated with the VM
-    nic_id = vm.network_profile.network_interfaces[0].id
-    nic_name = nic_id.split('/')[-1]
-    nic = network_client.network_interfaces.get(resource_group_name, nic_name)
-
-    # Fetch the public IP address associated with the network interface
-    public_ip_id = nic.ip_configurations[0].public_ip_address.id
-    public_ip_name = public_ip_id.split('/')[-1]
-    public_ip = network_client.public_ip_addresses.get(resource_group_name, public_ip_name)
-
-    # Print the VM name and its public IP address
-    print(f"VM Name: {vm_name}")
-    print(f"Public IP: {public_ip.ip_address}")
-
-    # Continuously monitor CPU and memory metrics in real-time
-    while True:
-        # Fetch CPU and memory metrics
-        metric_definitions = monitor_client.metric_definitions.list(resource_uri=vm.id)
-        cpu_metric = next((m for m in metric_definitions if m.name.value == 'Percentage CPU'), None)
-        memory_metric = next((m for m in metric_definitions if m.name.value == 'Available Memory Bytes'), None)
-
-        if cpu_metric and memory_metric:
-            # Correctly format the timespan
-            end_time = datetime.datetime.utcnow().isoformat()
-            start_time = (datetime.datetime.utcnow() - datetime.timedelta(minutes=5)).isoformat()  # Fetch metrics for the last 5 minutes
-            timespan = f"{start_time}/{end_time}"
-
-            cpu_metrics = monitor_client.metrics.list(
-                resource_uri=vm.id,
-                metricnames=cpu_metric.name.value,
-                timespan=timespan,
-                interval='PT1M',  # Fetch metrics at 1-minute intervals
-                aggregation='Average'
-            )
-            memory_metrics = monitor_client.metrics.list(
-                resource_uri=vm.id,
-                metricnames=memory_metric.name.value,
-                timespan=timespan,
-                interval='PT1M',  # Fetch metrics at 1-minute intervals
-                aggregation='Average'
-            )
-
-            cpu_usage = cpu_metrics.value[0].timeseries[0].data[0].average
-            memory_usage_bytes = memory_metrics.value[0].timeseries[0].data[0].average
-
-            # Convert memory usage to megabytes
-            memory_usage_mb = memory_usage_bytes / (1024 * 1024)
-            return cpu_usage, memory_usage_mb
-            # # Print the CPU and memory usage metrics
-            # print(f"CPU Usage: {cpu_usage:.2f}%")
-            # print(f"Memory Usage: {memory_usage_mb:.2f} MB")
-        else:
-            print("Metrics not found")
-
-        # Wait for 1 minute before fetching metrics again
-        time.sleep(60)
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
