@@ -1,6 +1,6 @@
 #import the necessary library for aws and azure
 import logging
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify,session
 import os
 from azure.identity import ClientSecretCredential
 from azure.mgmt.compute import ComputeManagementClient
@@ -9,7 +9,8 @@ from azure.mgmt.network import NetworkManagementClient
 from datetime import datetime, timedelta, timezone
 import boto3
 from flask_cors import CORS
-from ntfy import notify
+import ntfy
+import requests
 
 #-------------------------------------------------------------------- 
 
@@ -37,7 +38,6 @@ def monitor():
         aws_secret_key = request.form.get('aws_secret_key', '')
         aws_region = request.form.get('aws_region', '')
         instance_id = request.form.get('instance_id', '')
-        # alarm=request.form.get('custom-alarm', '')
         try:
             if not (aws_access_key and aws_secret_key and aws_region and instance_id):
                 raise ValueError("Missing AWS credentials or instance details")
@@ -185,7 +185,8 @@ def get_cpu_utilization_azure(subscription_id, client_id, client_secret, tenant_
             interval='PT1M'
         )
         cpu_usage = cpu_metrics.value[0].timeseries[0].data[0].average
-
+        if cpu_usage>3:
+            send_notification("Azure", "CPU", cpu_usage)
 
         return cpu_usage
     except Exception as e:
@@ -214,6 +215,8 @@ def get_memory_utilization_azure(subscription_id, client_id, client_secret, tena
     )
         memory_usage_mb = memory_metrics.value[0].timeseries[0].data[0].average
         memory_usage_mb=memory_usage_mb/1048576
+        if memory_usage_mb>280:
+            send_notification("Azure", "Memory", memory_usage_mb)
         return memory_usage_mb
     except Exception as e:
         logging.error(f"Azure memory utilization error: {e}")
@@ -251,7 +254,8 @@ def get_disk_usage_azure(subscription_id, client_id, client_secret, tenant_id, r
         # Extract the disk usage value from the metric data
         disk_usage = disk_metrics.value[0].timeseries[0].data[0].average
         disk_usage = disk_usage / 1048576
-
+        if disk_usage>3:
+            send_notification("Azure", "Disk", disk_usage)
 
         return disk_usage
     except Exception as e:
@@ -290,6 +294,9 @@ def network_usage_azure(subscription_id, client_id, client_secret, tenant_id, re
         network_usage = network_metrics.value[0].timeseries[0].data[0].average
         # Convert network usage to megabytes if needed
         # network_usage = network_usage / (1024 * 1024)
+        if network_usage>100:
+            print(network_usage)
+            send_notification("Azure", "Network", network_usage)
 
         return network_usage
     except Exception as e:
@@ -360,6 +367,9 @@ def get_cpu_utilization(access_key, secret_key, region, instance_id):
             if datapoints:
                 # Sort datapoints by timestamp in descending order to get the latest value
                 sorted_datapoints = sorted(datapoints, key=lambda x: x['Timestamp'], reverse=True)
+                aws_cpu=sorted_datapoints[0]['Average']
+                if aws_cpu>2:
+                    send_notification("AWS", "CPU",aws_cpu)
                 return sorted_datapoints[0]['Average']  # Return the average value of the latest datapoint
         return 0  # Return a default value if no datapoints are available
     except Exception as e:
@@ -387,16 +397,26 @@ def get_memory_utilization(access_key, secret_key, region, instance_id,):
             Period=300,
             Statistics=['Average'],
         )
-
+    
         if 'Datapoints' in response:
             datapoints = response['Datapoints']
             if datapoints:
-                return datapoints[-1]['Average']
+                memory_utilization = datapoints[-1]['Average']
+
+                if memory_utilization is not None and memory_utilization>30:
+                        send_notification("AWS", "Memory", memory_utilization)
+
+                return memory_utilization
         return None
     except Exception as e:
         logging.error(f"AWS memory utilization error: {e}")
         return {'error': str(e)}
-    
+
+def send_notification(message):
+    ntfy.send(message, token="tk_nhc66k711ke8ei8nzls464wnsc7hv")
+
+
+
     #---------------------------------------------get the disk utilization for aws cloud--------------------------------------------------------------------------------------------
 
 
@@ -423,9 +443,13 @@ def get_disk_usage(access_key, secret_key, region, instance_id,):
             Statistics=['Average'],
             Unit='Percent'
         )
-        # Extract and return disk utilization data
         datapoints = response['Datapoints']
         if datapoints:
+            aws_disk_utilization=datapoints[-1]['Average']
+            #--------code for notification------
+
+            if aws_disk_utilization>30:
+                send_notification ("AWS", "Disk",aws_disk_utilization)
             return datapoints[-1]['Average']
         else:
             return None
@@ -461,16 +485,21 @@ def aws_network(access_key, secret_key, region, instance_id):
             if datapoints:
                 # Sort datapoints by timestamp in descending order to get the latest value
                 sorted_datapoints = sorted(datapoints, key=lambda x: x['Timestamp'], reverse=True)
-                return sorted_datapoints[0]['Average']/1024 #convert the bytes into KB
+                aws_net=sorted_datapoints[0]['Average']/1024 
+                if aws_net>30:
+                    send_notification("AWS","Network",aws_net)
+            return aws_net
         return 0 
     except Exception as e:
         logging.error(f"AWS Network utilization error: {e}")
         return {'error': str(e)}    
     
-
+#function to send the notification if the memory is  above a certain threshold
+def send_notification(cloud_provider, resource_type, utilization):
+        message = f"{resource_type} Usage is High ({utilization}%) on {cloud_provider}"
+        requests.post("https://ntfy.sh/memory-alert", data=message.encode(encoding='utf-8'))
 
 # Runs the Flask app when the script is executed directly with debugging enabled.
-
 if __name__ == "__main__":
     app.run(debug=True)
 
