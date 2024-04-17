@@ -18,7 +18,6 @@ app = Flask(__name__)
 secret_key = os.urandom(24)
 app.secret_key = secret_key
 CORS(app)
-
 #--------------------------------------------------------------------
 
 logging.basicConfig(level=logging.ERROR)
@@ -38,17 +37,21 @@ def monitor():
         aws_secret_key = request.form.get('aws_secret_key', '')
         aws_region = request.form.get('aws_region', '')
         instance_id = request.form.get('instance_id', '')
+        set_notification = int(request.form.get('set_notification', 0))
+        print(set_notification)
+
+
         try:
             if not (aws_access_key and aws_secret_key and aws_region and instance_id):
                 raise ValueError("Missing AWS credentials or instance details")
 
             # pull Aws cloud metric here: cpu,memory,network and disk
 
-            aws_data = get_aws_instance_details(aws_access_key, aws_secret_key, aws_region, instance_id)
-            aws_data['cpu_utilization'] = get_cpu_utilization(aws_access_key, aws_secret_key, aws_region, instance_id)
-            aws_data['memory_utilization'] = get_memory_utilization(aws_access_key, aws_secret_key, aws_region, instance_id)
-            aws_data['disk_utilization'] =get_disk_usage(aws_access_key, aws_secret_key, aws_region, instance_id)
-            aws_data['network_out'] =aws_network(aws_access_key, aws_secret_key, aws_region, instance_id)
+            aws_data = get_aws_instance_details(aws_access_key, aws_secret_key, aws_region, instance_id,)
+            aws_data['cpu_utilization'] = get_cpu_utilization(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
+            aws_data['memory_utilization'] = get_memory_utilization(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
+            aws_data['disk_utilization'] =get_disk_usage(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
+            aws_data['network_out'] =aws_network(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
 
             #return the metric in jason format
             return jsonify(aws_data)
@@ -67,6 +70,10 @@ def monitor():
         azure_tenant_id = request.form.get('azure_tenant_id', '')
         azure_vm_name = request.form.get('azure_vm_name', '')
         azure_resource_group = request.form.get('azure_resource_group', '')
+        azure_set_notification = int(request.form.get('azure_set_notification', 0))
+        print(azure_set_notification)
+
+
 
         try:
             if not (azure_subscription_id and azure_client_id and azure_client_secret and azure_tenant_id and azure_vm_name and azure_resource_group):
@@ -75,10 +82,10 @@ def monitor():
         #   pull aZure cloud metric here: cpu,memory,network and disk
 
             azure_data = get_azure_metric(azure_tenant_id, azure_client_id, azure_client_secret, azure_subscription_id, azure_resource_group, azure_vm_name)
-            azure_data['cpu_utilization'] = get_cpu_utilization_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name)
-            azure_data['memory_utilization'] = get_memory_utilization_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name)
-            azure_data['disk_utilization'] = get_disk_usage_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name)
-            azure_data['network_utilization'] = network_usage_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name)
+            azure_data['cpu_utilization'] = get_cpu_utilization_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name,azure_set_notification)
+            azure_data['memory_utilization'] = get_memory_utilization_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name,azure_set_notification)
+            azure_data['disk_utilization'] = get_disk_usage_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name,azure_set_notification)
+            azure_data['network_utilization'] = network_usage_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name,azure_set_notification)
             
             #return the metric in jason format
             return jsonify(azure_data)
@@ -95,6 +102,8 @@ def monitor():
         aws_secret_key = request.form.get('aws_secret_key', '')
         aws_region = request.form.get('aws_region', '')
         instance_id = request.form.get('instance_id', '')
+        set_notification = int(request.form.get('set_notification', 0))
+
 
         azure_subscription_id = request.form.get('azure_subscription_id', '')
         azure_client_id = request.form.get('azure_client_id', '')
@@ -102,6 +111,7 @@ def monitor():
         azure_tenant_id = request.form.get('azure_tenant_id', '')
         azure_vm_name = request.form.get('azure_vm_name', '')
         azure_resource_group = request.form.get('azure_resource_group', '')
+        azure_set_notification = int(request.form.get('azure_set_notification', 0))
 
 
         try:
@@ -113,20 +123,19 @@ def monitor():
 
         #pulling the azure and aws  combined metrics for pulling the cpu,memory,disk usage and network utilization 
             azure_data = get_azure_metric(azure_tenant_id, azure_client_id, azure_client_secret, azure_subscription_id, azure_resource_group, azure_vm_name)
-            azure_data['cpu_utilization'] = get_cpu_utilization_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name)
-            azure_data['memory_utilization'] = get_memory_utilization_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name)
-            azure_data['disk_utilization'] = get_disk_usage_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name)
-            azure_data['network_utilization'] = network_usage_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name)
+            azure_data['cpu_utilization'] = get_cpu_utilization_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name,azure_set_notification)
+            azure_data['memory_utilization'] = get_memory_utilization_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name,azure_set_notification)
+            azure_data['disk_utilization'] = get_disk_usage_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name,azure_set_notification)
+            azure_data['network_utilization'] = network_usage_azure(azure_subscription_id, azure_client_id, azure_client_secret, azure_tenant_id, azure_resource_group, azure_vm_name,azure_set_notification)
 
             aws_data = get_aws_instance_details(aws_access_key, aws_secret_key, aws_region, instance_id)
-            aws_data['cpu_utilization'] = get_cpu_utilization(aws_access_key, aws_secret_key, aws_region, instance_id)
-            aws_data['memory_utilization'] = get_memory_utilization(aws_access_key, aws_secret_key, aws_region, instance_id)
-            aws_data['disk_utilization'] =get_disk_usage(aws_access_key, aws_secret_key, aws_region, instance_id)
-            aws_data['network_out'] =aws_network(aws_access_key, aws_secret_key, aws_region, instance_id)
+            aws_data['cpu_utilization'] = get_cpu_utilization(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
+            aws_data['memory_utilization'] = get_memory_utilization(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
+            aws_data['disk_utilization'] =get_disk_usage(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
+            aws_data['network_out'] =aws_network(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
 
             #retun the aws as well as azure  data in json format
             return jsonify(aws_data,azure_data)
-
         except Exception as e:
             logging.error(f"Azure error: {e}")
             return jsonify({'error': str(e)}), 400
@@ -157,7 +166,7 @@ def get_azure_metric(tenant_id, client_id, client_secret, subscription_id, resou
         if not nic_id:
             raise ValueError("Primary NIC not found")
 
-        # uptime = "Not available" The uptime for the azure virtual machine cannot be fetched  directly from the API
+        # uptime = "Not available" The uptime for the azure virtual machine cannot be fetched  directly from the API so I will try to do it later if possible by anyway
 
         return {
             'server_name': vm.name,
@@ -171,7 +180,7 @@ def get_azure_metric(tenant_id, client_id, client_secret, subscription_id, resou
     
 #---------------------------------------------CPU utilization for azure--------------------------------------------------------------------------------------------
 
-def get_cpu_utilization_azure(subscription_id, client_id, client_secret, tenant_id, resource_group_name, vm_name):
+def get_cpu_utilization_azure(subscription_id, client_id, client_secret, tenant_id, resource_group_name, vm_name,azure_set_notification):
     try:
         credential = ClientSecretCredential(tenant_id, client_id, client_secret)
         monitor_client = MonitorManagementClient(credential, subscription_id)
@@ -185,15 +194,14 @@ def get_cpu_utilization_azure(subscription_id, client_id, client_secret, tenant_
             interval='PT1M'
         )
         cpu_usage = cpu_metrics.value[0].timeseries[0].data[0].average
-        if cpu_usage>3:
-            send_notification("Azure", "CPU", cpu_usage)
+        azure_send_notification("Azure", "CPU", cpu_usage,azure_set_notification)
 
         return cpu_usage
     except Exception as e:
         logging.error(f"Azure CPU utilization error: {e}")
         return {'error': str(e)}
 
-def get_memory_utilization_azure(subscription_id, client_id, client_secret, tenant_id, resource_group_name, vm_name):
+def get_memory_utilization_azure(subscription_id, client_id, client_secret, tenant_id, resource_group_name, vm_name,azure_set_notification):
     try:
         credential = ClientSecretCredential(tenant_id, client_id, client_secret)
         compute_client = ComputeManagementClient(credential, subscription_id)
@@ -215,8 +223,7 @@ def get_memory_utilization_azure(subscription_id, client_id, client_secret, tena
     )
         memory_usage_mb = memory_metrics.value[0].timeseries[0].data[0].average
         memory_usage_mb=memory_usage_mb/1048576
-        if memory_usage_mb>280:
-            send_notification("Azure", "Memory", memory_usage_mb)
+        azure_send_notification("Azure", "Memory", memory_usage_mb,azure_set_notification)
         return memory_usage_mb
     except Exception as e:
         logging.error(f"Azure memory utilization error: {e}")
@@ -225,7 +232,7 @@ def get_memory_utilization_azure(subscription_id, client_id, client_secret, tena
 
 #---------------------------------------------get the Disk usage for azue cloud--------------------------------------------------------------------------------------------
 
-def get_disk_usage_azure(subscription_id, client_id, client_secret, tenant_id, resource_group_name, vm_name):
+def get_disk_usage_azure(subscription_id, client_id, client_secret, tenant_id, resource_group_name, vm_name,azure_set_notification):
     try:
         credential = ClientSecretCredential(tenant_id, client_id, client_secret)
         compute_client = ComputeManagementClient(credential, subscription_id)
@@ -254,8 +261,7 @@ def get_disk_usage_azure(subscription_id, client_id, client_secret, tenant_id, r
         # Extract the disk usage value from the metric data
         disk_usage = disk_metrics.value[0].timeseries[0].data[0].average
         disk_usage = disk_usage / 1048576
-        if disk_usage>3:
-            send_notification("Azure", "Disk", disk_usage)
+        azure_send_notification("Azure", "Disk", disk_usage,azure_set_notification)
 
         return disk_usage
     except Exception as e:
@@ -264,7 +270,7 @@ def get_disk_usage_azure(subscription_id, client_id, client_secret, tenant_id, r
 
 #---------------------------------------------Azure network usages pulling--------------------------------------------------------------------------------------------
 
-def network_usage_azure(subscription_id, client_id, client_secret, tenant_id, resource_group_name, vm_name):
+def network_usage_azure(subscription_id, client_id, client_secret, tenant_id, resource_group_name, vm_name,azure_set_notification):
     try:
         credential = ClientSecretCredential(tenant_id, client_id, client_secret)
         compute_client = ComputeManagementClient(credential, subscription_id)
@@ -292,11 +298,8 @@ def network_usage_azure(subscription_id, client_id, client_secret, tenant_id, re
 
         # Extract the network usage value from the metric data
         network_usage = network_metrics.value[0].timeseries[0].data[0].average
-        # Convert network usage to megabytes if needed
-        # network_usage = network_usage / (1024 * 1024)
-        if network_usage>100:
-            print(network_usage)
-            send_notification("Azure", "Network", network_usage)
+
+        azure_send_notification("Azure", "Network", network_usage,azure_set_notification)
 
         return network_usage
     except Exception as e:
@@ -341,7 +344,7 @@ def get_aws_instance_details(access_key, secret_key, region, instance_id):
 
 #---------------------------------------------pulls the cpu utilization for aws cloud --------------------------------------------------------------------------------------------
 
-def get_cpu_utilization(access_key, secret_key, region, instance_id):
+def get_cpu_utilization(access_key, secret_key, region, instance_id,set_notification):
     try:
         if not (access_key and secret_key and region and instance_id):
             raise ValueError("Missing AWS credentials or instance details")
@@ -368,8 +371,7 @@ def get_cpu_utilization(access_key, secret_key, region, instance_id):
                 # Sort datapoints by timestamp in descending order to get the latest value
                 sorted_datapoints = sorted(datapoints, key=lambda x: x['Timestamp'], reverse=True)
                 aws_cpu=sorted_datapoints[0]['Average']
-                if aws_cpu>2:
-                    send_notification("AWS", "CPU",aws_cpu)
+                send_notification("AWS", "CPU",aws_cpu,set_notification)
                 return sorted_datapoints[0]['Average']  # Return the average value of the latest datapoint
         return 0  # Return a default value if no datapoints are available
     except Exception as e:
@@ -378,7 +380,7 @@ def get_cpu_utilization(access_key, secret_key, region, instance_id):
 #---------------------------------------------aws memory metric pulling--------------------------------------------------------------------------------------------
 
 
-def get_memory_utilization(access_key, secret_key, region, instance_id,):
+def get_memory_utilization(access_key, secret_key, region, instance_id,set_notification,):
     try:
         if not (access_key and secret_key and region and instance_id):
             raise ValueError("Missing AWS credentials or instance details")
@@ -403,8 +405,7 @@ def get_memory_utilization(access_key, secret_key, region, instance_id,):
             if datapoints:
                 memory_utilization = datapoints[-1]['Average']
 
-                if memory_utilization is not None and memory_utilization>30:
-                        send_notification("AWS", "Memory", memory_utilization)
+                send_notification("AWS", "Memory", memory_utilization,set_notification)
 
                 return memory_utilization
         return None
@@ -420,7 +421,7 @@ def send_notification(message):
     #---------------------------------------------get the disk utilization for aws cloud--------------------------------------------------------------------------------------------
 
 
-def get_disk_usage(access_key, secret_key, region, instance_id,):
+def get_disk_usage(access_key, secret_key, region, instance_id,set_notification):
     try:
         # Create CloudWatch client with hardcoded credentials and specified region
         cloudwatch = boto3.client('cloudwatch',region_name=region,aws_access_key_id=access_key,aws_secret_access_key=secret_key)
@@ -447,9 +448,8 @@ def get_disk_usage(access_key, secret_key, region, instance_id,):
         if datapoints:
             aws_disk_utilization=datapoints[-1]['Average']
             #--------code for notification------
-
-            if aws_disk_utilization>30:
-                send_notification ("AWS", "Disk",aws_disk_utilization)
+            send_notification("AWS", "Disk", aws_disk_utilization,set_notification)
+                
             return datapoints[-1]['Average']
         else:
             return None
@@ -459,7 +459,7 @@ def get_disk_usage(access_key, secret_key, region, instance_id,):
 
 #--------------------------------------------- Network info fetch for aws--------------------------------------------------------------------------------------------
 
-def aws_network(access_key, secret_key, region, instance_id):
+def aws_network(access_key, secret_key, region, instance_id,set_notification):
     try:
         if not (access_key and secret_key and region and instance_id):
             raise ValueError("Missing AWS credentials or instance details")
@@ -479,27 +479,37 @@ def aws_network(access_key, secret_key, region, instance_id):
             Statistics=['Average'],
             Unit='Bytes'
         )
-
         if 'Datapoints' in response:
             datapoints = response['Datapoints']
             if datapoints:
                 # Sort datapoints by timestamp in descending order to get the latest value
                 sorted_datapoints = sorted(datapoints, key=lambda x: x['Timestamp'], reverse=True)
                 aws_net=sorted_datapoints[0]['Average']/1024 
-                if aws_net>30:
-                    send_notification("AWS","Network",aws_net)
-            return aws_net
+                send_notification("AWS","Network",aws_net,set_notification)
+            return sorted_datapoints[0]['Average']/1024 
         return 0 
     except Exception as e:
         logging.error(f"AWS Network utilization error: {e}")
         return {'error': str(e)}    
     
-#function to send the notification if the memory is  above a certain threshold
-def send_notification(cloud_provider, resource_type, utilization):
-        message = f"{resource_type} Usage is High ({utilization}%) on {cloud_provider}"
-        requests.post("https://ntfy.sh/memory-alert", data=message.encode(encoding='utf-8'))
+#function to send the notification after the user defines the value in percentage in the form
+
+
+def send_notification(cloud_provider, resource_type, utilization,set_notification):
+                    if utilization>set_notification:
+                        print("Jay  SiyaRam")
+                        message = f"{resource_type} Usage is High ({utilization}%) on {cloud_provider}"
+                        requests.post("https://ntfy.sh/memory-alert", data=message.encode(encoding='utf-8'))
+                        
+def azure_send_notification(cloud_provider, resource_type, utilization,azure_set_notification):
+                    if utilization>azure_set_notification:
+                        print("Jay  Bajrang Bali")
+                        message = f"{resource_type} Usage is High ({utilization}%) on {cloud_provider}"
+                        requests.post("https://ntfy.sh/Cloud-Monitor", data=message.encode(encoding='utf-8'))
 
 # Runs the Flask app when the script is executed directly with debugging enabled.
+
+
 if __name__ == "__main__":
     app.run(debug=True)
 

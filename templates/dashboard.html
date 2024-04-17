@@ -185,51 +185,30 @@
         >
           <option value="aws">AWS</option>
           <option value="azure">Azure</option>
-          <option value="gcp">GCP</option>
-          <option value="both">Compare</option>
+          <option value="both">AWS Vs Azure</option>
         </select>
       </div>
       <div class="form-group" id="aws-fields">
         <div class="fullflex">
           <label for="aws_access_key">AWS Access ID:</label>
-          <input
-            type="text"
-            id="aws_access_key"
-            name="aws_access_key"
-            class="form-control"
-            required
-          />
+          <input type="text"id="aws_access_key" name="aws_access_key" class="form-control"required/>
         </div>
         <div class="fullflex">
           <label for="aws_secret_key">AWS Secret Key:</label>
-          <input
-            type="text"
-            id="aws_secret_key"
-            name="aws_secret_key"
-            class="form-control"
-            required
-          />
+          <input type="text"id="aws_secret_key" name="aws_secret_key" class="form-control" required/>
         </div>
+
         <div class="fullflex">
           <label for="aws_region">AWS Region:</label>
-          <input
-            type="text"
-            id="aws_region"
-            name="aws_region"
-            class="form-control"
-            placeholder="Enter AWS Region"
-            required
-          />
+          <input type="text" id="aws_region" name="aws_region" class="form-control" placeholder="Enter AWS Region"required/>
         </div>
         <div class="fullflex">
           <label for="instance_id">Instance ID:</label>
-          <input
-            type="text"
-            id="instance_id"
-            name="instance_id"
-            class="form-control"
-            required
-          />
+          <input type="text" id="instance_id" name="instance_id" class="form-control" required/>
+        </div>
+        <div class="fullflex">
+          <label for="set_notification">Set Notification:</label>
+          <input type="number" id="set_notification" name="set_notification" class="form-control" placeholder="Enter the data in percent for Notification" required/>
         </div>
       </div>
 
@@ -240,7 +219,6 @@
                 <input type="text" id="azure_subscription_id" name="azure_subscription_id" class="form-control" placeholder="Enter Azure Subscription ID">
     
                 <label for="azure_clinet_id">Azure Client ID  :</label>
-                <!-- <input type="text" id="azure_clinet_id" name="azure_clinet_id" class="form-control" placeholder="Enter Azure Client ID"> -->
                 <input type="text" id="azure_client_id" name="azure_client_id" class="form-control" placeholder="Enter Azure Client ID">
                 <label for="azure_clinet_secret">Azure Client Secret :</label>
                 <input type="text" id="azure_clinet_secret" name="azure_clinet_secret" class="form-control" placeholder="Enter Azure Client Secret">
@@ -253,6 +231,10 @@
     
                 <label for="azure_resource_group">Azure Resource Group:</label>
                 <input type="text" id="azure_resource_group" name="azure_resource_group" class="form-control" placeholder="">
+
+                <label for="azure_set_notification">Azure Set Notification:</label>
+                <input type="text" id="azure_set_notification" name="azure_set_notification" class="form-control" placeholder="Enter the data in percent for Notification">
+               
             </div>
         </div>
    
@@ -260,23 +242,6 @@
         
       </div>
 
-      <div class="form-group" id="gcp-fields" style="display: none">
-        <label for="gcp_project_id">GCP Project ID:</label>
-        <input
-          type="text"
-          id="gcp_project_id"
-          name="gcp_project_id"
-          class="form-control"
-        />
-
-        <label for="gcp_instance_id">GCP Instance ID:</label>
-        <input
-          type="text"
-          id="gcp_instance_id"
-          name="gcp_instance_id"
-          class="form-control"
-        />
-      </div>
 
       <button type="button" onclick="startMonitoring()" class="c-button">
         Monitor
@@ -314,271 +279,259 @@
    <script>
     var intervalId; // Declare intervalId variable globally
 
-    function startMonitoring() {
-        clearInterval(intervalId); // Clear any previous interval
+function startMonitoring() {
+    // clearInterval(intervalId); // Clear any previous interval
 
-        var cloudProvider = document.getElementById("cloud_provider").value;
+    var cloudProvider = document.getElementById("cloud_provider").value;
 
-        // Prepare data based on the selected cloud provider
-        var formData = {
-            cloud_provider: cloudProvider,
-        };
+    // Prepare data based on the selected cloud provider
+    var formData = {
+        cloud_provider: cloudProvider,
+    };
 
-        if (cloudProvider === "aws") {
-            formData.aws_access_key = document.getElementById("aws_access_key").value;
-            formData.aws_secret_key = document.getElementById("aws_secret_key").value;
-            formData.aws_region = document.getElementById("aws_region").value;
-            formData.instance_id = document.getElementById("instance_id").value;
-        } else if (cloudProvider === "azure") {
-            formData.azure_subscription_id = document.getElementById("azure_subscription_id").value;
-            // formData.azure_client_id = document.getElementById("azure_clinet_id").value;
-            formData.azure_client_id = document.getElementById("azure_client_id").value;
+    if (cloudProvider === "aws") {
+        formData.aws_access_key = document.getElementById("aws_access_key").value;
+        formData.aws_secret_key = document.getElementById("aws_secret_key").value;
+        formData.aws_region = document.getElementById("aws_region").value;
+        formData.instance_id = document.getElementById("instance_id").value;
+        formData.set_notification = document.getElementById("set_notification").value;
 
-            formData.azure_client_secret = document.getElementById("azure_clinet_secret").value;
-            formData.azure_tenant_id = document.getElementById("azure_tenant_id").value;
-            formData.azure_vm_name = document.getElementById("azure_vm_name").value;
-            formData.azure_resource_group = document.getElementById("azure_resource_group").value;
-        }else{
-          formData.aws_access_key = document.getElementById("aws_access_key").value;
-            formData.aws_secret_key = document.getElementById("aws_secret_key").value;
-            formData.aws_region = document.getElementById("aws_region").value;
-            formData.instance_id = document.getElementById("instance_id").value;
+    } else if (cloudProvider === "azure") {
+        formData.azure_subscription_id = document.getElementById("azure_subscription_id").value;
+        formData.azure_client_id = document.getElementById("azure_client_id").value;
+        formData.azure_client_secret = document.getElementById("azure_clinet_secret").value;
+        formData.azure_tenant_id = document.getElementById("azure_tenant_id").value;
+        formData.azure_vm_name = document.getElementById("azure_vm_name").value;
+        formData.azure_resource_group = document.getElementById("azure_resource_group").value;
+        formData.azure_set_notification = document.getElementById("azure_set_notification").value;
 
+    }else{
+      formData.aws_access_key = document.getElementById("aws_access_key").value;
+        formData.aws_secret_key = document.getElementById("aws_secret_key").value;
+        formData.aws_region = document.getElementById("aws_region").value;
+        formData.instance_id = document.getElementById("instance_id").value;
+        formData.set_notification = document.getElementById("set_notification").value;
 
-            formData.azure_subscription_id = document.getElementById("azure_subscription_id").value;
-            // formData.azure_client_id = document.getElementById("azure_clinet_id").value;
-            formData.azure_client_id = document.getElementById("azure_client_id").value;
+        formData.azure_subscription_id = document.getElementById("azure_subscription_id").value;
+        formData.azure_client_id = document.getElementById("azure_client_id").value;
+        formData.azure_client_secret = document.getElementById("azure_clinet_secret").value;
+        formData.azure_tenant_id = document.getElementById("azure_tenant_id").value;
+        formData.azure_vm_name = document.getElementById("azure_vm_name").value;
+        formData.azure_resource_group = document.getElementById("azure_resource_group").value;
+        formData.azure_set_notification = document.getElementById("azure_set_notification").value;
 
-            formData.azure_client_secret = document.getElementById("azure_clinet_secret").value;
-            formData.azure_tenant_id = document.getElementById("azure_tenant_id").value;
-            formData.azure_vm_name = document.getElementById("azure_vm_name").value;
-            formData.azure_resource_group = document.getElementById("azure_resource_group").value;
-        }
+    }
+    // Send AJAX request to Flask
 
-        // Send AJAX request to Flask app for monitoring data
-        $.ajax({
-            url: "/monitor",
-            type: "POST",
-            data: formData,
-           // Update the success and error callbacks of the AJAX request as follows:
-          success: function(response) {
-              if (!response.error) {
-                  displayMonitoringData(response);
-              } else {
-                  // Display error message in a more user-friendly way
-                  alert("Error: " + response.error);
-              }
-          },
-          error: function(xhr, status, error) {
-              // Display error message in a more user-friendly way
-              alert("AJAX Error: " + error);
+    $.ajax({
+        url: "/monitor",
+        type: "POST",
+        data: formData,
+       // Call the displayMonitoringData function if the  request is successful
+      success: function(response) {
+          if (!response.error) {
+              displayMonitoringData(response);
+          } else {
+              alert("Error: " + response.error);
           }
-,
-        });
-    }
-    function transformString(str) {
-            // Split the string into words based on underscores
-            var words = str.split('_');
+      },
 
-            // Capitalize the first letter of each word
-            for (var i = 0; i < words.length; i++) {
-                words[i] = words[i].charAt(0).toUpperCase() + words[i].slice(1);
-            }
-
-            // Join the words back together with spaces
-            var result = words.join(' ');
-
-            return result;
-        }
-    function displayMonitoringData(data) {
-     
-      renderChart(data)
-      renderChart2(data)
-        // Display monitoring data on the dashboard
-        document.getElementById("monitor-form").style.display="none";
-        var monitorContainer = document.getElementById("monitor-containerid");
-        monitorContainer.style.display = "block";
-
-        // Set up interval for real-time updates
-        clearInterval(intervalId); // Clear any previous interval
-        intervalId = setInterval(function() {
-            // Send AJAX request to update monitoring data every 5 seconds
-            startMonitoring();
-        }, 5000);
-
-        // Update the HTML content of the monitor-results div to display the monitoring data
-        var monitorResults = document.getElementById("monitor-results");
-        if(typeof data==="object"){
-          console.log(data, "data")
-           var htmlContent = '<div class="result-container">';
-           htmlContent += '<div class="flex-col" style="border-right:0px;">';
-            for (var key in data) {
-              console.log("key", key)
-                if (data.hasOwnProperty(key)) {
-                    htmlContent += '<p class="fullflex2 gap-2 font-xl"><strong>' + transformString(key) + ':</strong> ' + data[key] + '</p><br>';
-                }
-            }
-            htmlContent += '</div>';
-            htmlContent += '</div>';
-        }
-        if(data.length>1){
-        var htmlContent = '<div class="result-container">';
-        data.forEach(function(obj) {
-            htmlContent += '<div class="flex-col">';
-            for (var key in obj) {
-                if (obj.hasOwnProperty(key)) {
-                    htmlContent += '<p class="fullflex2 gap-2 font-xl"><strong>' + transformString(key) + ':</strong> ' + obj[key] + '</p><br>';
-                }
-            }
-            htmlContent += '</div>';
-        });
-        htmlContent += '</div>';
-        }
-        monitorResults.innerHTML = htmlContent;
-    }
-
-    // Show/hide specific fields based on selection
-    document.getElementById("cloud_provider").addEventListener("change", function() {
-        const awsFields = document.getElementById("aws-fields");
-        const azureFields = document.getElementById("azure-fields");
-
-        if (this.value === "aws") {
-            awsFields.style.display = "block";
-            azureFields.style.display = "none";
-        } else if (this.value === "azure") {
-            awsFields.style.display = "none";
-            azureFields.style.display = "block";
-        }else {
-          awsFields.style.display = "block";
-          azureFields.style.display = "block";  
-        }
     });
+}
+function transformString(str) {
+        // Split the string into words based on underscores
+        var words = str.split('_');
+
+        // Capitalize the first letter of each word
+        for (var i = 0; i < words.length; i++) {
+            words[i] = words[i].charAt(0).toUpperCase() + words[i].slice(1);
+        }
+
+        // Join the words back together with spaces
+        var result = words.join(' ');
+
+        return result;
+    }
+function displayMonitoringData(data) {
+ 
+  renderChart(data)
+  renderChart2(data)
+    // Display monitoring data on the dashboard
+    document.getElementById("monitor-form").style.display="none";
+    var monitorContainer = document.getElementById("monitor-containerid");
+    monitorContainer.style.display = "block";
+
+    // Set up interval for real-time updates
+
+    clearInterval(intervalId); // Clear any previous interval
+    intervalId = setInterval(function() {
+        // Send AJAX request to update monitoring data every 5 seconds
+        startMonitoring();
+    }, 5000);
+
+    // Update the HTML content of the monitor-results div to display the monitoring data
+    var monitorResults = document.getElementById("monitor-results");
+    if(typeof data==="object"){
+      console.log(data, "data")
+       var htmlContent = '<div class="result-container">';
+       htmlContent += '<div class="flex-col" style="border-right:0px;">';
+        for (var key in data) {
+          console.log("key", key)
+            if (data.hasOwnProperty(key)) {
+                htmlContent += '<p class="fullflex2 gap-2 font-xl"><strong>' + transformString(key) + ':</strong> ' + data[key] + '</p><br>';
+            }
+        }
+        htmlContent += '</div>';
+        htmlContent += '</div>';
+    }
+    if(data.length>1){
+    var htmlContent = '<div class="result-container">';
+    data.forEach(function(obj) {
+        htmlContent += '<div class="flex-col">';
+        for (var key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                htmlContent += '<p class="fullflex2 gap-2 font-xl"><strong>' + transformString(key) + ':</strong> ' + obj[key] + '</p><br>';
+            }
+        }
+        htmlContent += '</div>';
+    });
+    htmlContent += '</div>';
+    }
+    monitorResults.innerHTML = htmlContent;
+}
+
+// Show/hide specific fields based on selection
+document.getElementById("cloud_provider").addEventListener("change", function() {
+    const awsFields = document.getElementById("aws-fields");
+    const azureFields = document.getElementById("azure-fields");
+
+    if (this.value === "aws") {
+        awsFields.style.display = "block";
+        azureFields.style.display = "none";
+    } else if (this.value === "azure") {
+        awsFields.style.display = "none";
+        azureFields.style.display = "block";
+    }else {
+      awsFields.style.display = "block";
+      azureFields.style.display = "block";  
+    }
+});
 
 
-    function renderChart(data){
-      if(data.length >1){
-      document.getElementById('chartTitle').innerText="Memory Utilization."
-      const ctx = document.getElementById('myChart');
-      let ww=data[0].memory_utilization;
-      let w2 = data[1].memory_utilization;
-      // Chart.helpers.each(Chart.instances, function (instance) {
-      //   instance.destroy();
-      // }); 
+function renderChart(data){
+  if(data.length >1){
+  document.getElementById('chartTitle').innerText="Memory Utilization."
+  const ctx = document.getElementById('myChart');
+  let ww=data[0].memory_utilization;
+  let w2 = data[1].memory_utilization;
 
- new Chart(ctx, {
-  type: 'bar',
-  data: {
-    labels: ['AWS', 'AZURE'],
-    datasets: [{
-      label: 'Memory Utilization',
-      data: [ww,w2],
-      backgroundColor: [
-      'rgba(255, 99, 132, 0.2)',
-      'rgba(255, 159, 64, 0.2)',
-      'rgba(255, 205, 86, 0.2)',
-      'rgba(75, 192, 192, 0.2)',
-      'rgba(54, 162, 235, 0.2)',
-      'rgba(153, 102, 255, 0.2)',
-      'rgba(201, 203, 207, 0.2)'
-    ],
-      borderWidth: 1
-    }]
-  },
-  options: {
-    scales: {
-      y: {
-        beginAtZero: true
-      }
+new Chart(ctx, {
+type: 'bar',
+data: {
+labels: ['AWS', 'AZURE'],
+datasets: [{
+  label: 'Memory Utilization',
+  data: [ww,w2],
+  backgroundColor: [
+  'rgba(144, 238, 144, 0.2)',
+  'rgba(255, 192, 203, 0.2)'
+],
+  borderWidth: 1
+}]
+},
+options: {
+scales: {
+  y: {
+    beginAtZero: true
+  }
+}
+}
+});
+  }else{
+    console.log(data)
+  document.getElementById('chartTitle').innerText="Utilization."
+  const ctx = document.getElementById('myChart');
+  let ww=data.memory_utilization ===null ? 0 : data.memory_utilization;
+  let w2 = data.cpu_utilization===null ? 0: data.cpu_utilization;
+  console.log(ww,w2)
+
+new Chart(ctx, {
+type: 'bar',
+data: {
+labels: ['Memory', 'CPU'],
+datasets: [{
+  label: 'Utilization',
+  data: [ww,w2],
+  backgroundColor: [
+
+  'rgba(153, 102, 255, 0.2)',
+  'rgba(201, 203, 207, 0.2)'
+],
+  borderWidth: 1
+}]
+},
+options: {
+scales: {
+  y: {
+    beginAtZero: true
+  }
+}
+}
+});
+  }
+}
+
+
+function renderChart2(data){
+
+if (data.length > 1) {
+document.getElementById('chartTitle2').innerText = "CPU Utilization";
+const ctx = document.getElementById('myChart2');
+let aws_cpu_data = data[0]?.cpu_utilization === null ? 0 : data[0].cpu_utilization;
+let azure_cpu_data = data[1].cpu_utilization;
+
+// Prepare data for the chart
+let chartData = {
+  labels: ['AWS', 'AZURE'],
+  datasets: [{
+    label: 'CPU Utilization',
+    data: [aws_cpu_data, azure_cpu_data],
+    borderColor: 'rgba(255, 99, 132, 1)', // Color of the line
+    borderWidth: 2,
+    fill: false // Do not fill the area under the line
+  }]
+};
+let chartData2 = {
+  labels: ['AWS', 'AZURE'],
+  datasets: [{
+    label: 'CPU Utilization',
+    data: [aws_cpu_data, azure_cpu_data],
+    borderColor: 'rgba(255, 99, 132, 1)', // Color of the line
+    borderWidth: 2,
+    fill: false // Do not fill the area under the line
+  }]
+};
+
+// Chart configuration
+let chartOptions = {
+  scales: {
+    y: {
+      beginAtZero: true
     }
   }
+};
+
+// Render the line chart
+new Chart(ctx, {
+  type: 'line',
+  data: chartData,
+  options: chartOptions
 });
-      }else{
-        console.log(data)
-      document.getElementById('chartTitle').innerText="Utilization."
-      const ctx = document.getElementById('myChart');
-      let ww=data.memory_utilization ===null ? 0 : data.memory_utilization;
-      let w2 = data.cpu_utilization===null ? 0: data.cpu_utilization;
-      console.log(ww,w2)
-      // Chart.helpers.each(Chart.instances, function (instance) {
-      //   instance.destroy();
-      // }); 
-
- new Chart(ctx, {
-  type: 'bar',
-  data: {
-    labels: ['Memory', 'CPU'],
-    datasets: [{
-      label: 'Utilization',
-      data: [ww,w2],
-      backgroundColor: [
-      'rgba(255, 99, 132, 0.2)',
-      'rgba(255, 159, 64, 0.2)',
-      'rgba(255, 205, 86, 0.2)',
-      'rgba(75, 192, 192, 0.2)',
-      'rgba(54, 162, 235, 0.2)',
-      'rgba(153, 102, 255, 0.2)',
-      'rgba(201, 203, 207, 0.2)'
-    ],
-      borderWidth: 1
-    }]
-  },
-  options: {
-    scales: {
-      y: {
-        beginAtZero: true
-      }
-    }
-  }
-});
-      }
-    }
-
-
-    function renderChart2(data){
-      if(data.length>1){
-      document.getElementById('chartTitle2').innerText="CPU Utilization."
-      const ctx = document.getElementById('myChart2');
-      let ww=data[0]?.cpu_utilization === null ? 0 : data[0].cpu_utilization ;
-      let w2 = data[1].cpu_utilization;
-      // Chart.helpers.each(Chart.instances, function (instance) {
-      //   instance.destroy();
-      // }); 
-      console.log(ww,w2, "ww")
-
- new Chart(ctx, {
-  type: 'bar',
-  data: {
-    labels: ['AWS', 'AZURE'],
-    datasets: [{
-      label: 'CPU Utilization',
-      data: [ww,w2],
-      backgroundColor: [
-      'rgba(255, 99, 132, 0.2)',
-      'rgba(255, 159, 64, 0.2)',
-      'rgba(255, 205, 86, 0.2)',
-      'rgba(75, 192, 192, 0.2)',
-      'rgba(54, 162, 235, 0.2)',
-      'rgba(153, 102, 255, 0.2)',
-      'rgba(201, 203, 207, 0.2)'
-    ],
-      borderWidth: 1
-    }]
-  },
-  options: {
-    scales: {
-      y: {
-        beginAtZero: true
-      }
-    }
-  }
-});
-      }
-    }
-
-
-
+}
+}
 
 </script>
+
 
     </body>
     </html>
