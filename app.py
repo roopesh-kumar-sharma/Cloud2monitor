@@ -51,7 +51,7 @@ def monitor():
             aws_data['cpu_utilization'] = get_cpu_utilization(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
             aws_data['memory_utilization'] = get_memory_utilization(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
             aws_data['disk_utilization'] =get_disk_usage(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
-            aws_data['network_out'] =aws_network(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
+            aws_data['network_utilization'] =aws_network(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
 
             #return the metric in jason format
             return jsonify(aws_data)
@@ -132,7 +132,7 @@ def monitor():
             aws_data['cpu_utilization'] = get_cpu_utilization(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
             aws_data['memory_utilization'] = get_memory_utilization(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
             aws_data['disk_utilization'] =get_disk_usage(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
-            aws_data['network_out'] =aws_network(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
+            aws_data['network_utilization'] =aws_network(aws_access_key, aws_secret_key, aws_region, instance_id,set_notification)
 
             #retun the aws as well as azure  data in json format
             return jsonify(aws_data,azure_data)
@@ -492,18 +492,18 @@ def aws_network(access_key, secret_key, region, instance_id,set_notification):
         logging.error(f"AWS Network utilization error: {e}")
         return {'error': str(e)}    
     
-#function to send the notification after the user defines the value in percentage in the form
+#AWS function to send the notification after the user defines the value in percentage in the form
 
 
 def send_notification(cloud_provider, resource_type, utilization,set_notification):
                     if utilization>set_notification:
-                        print("Jay  SiyaRam")
                         message = f"{resource_type} Usage is High ({utilization}%) on {cloud_provider}"
                         requests.post("https://ntfy.sh/memory-alert", data=message.encode(encoding='utf-8'))
-                        
+          
+#Azure function to send the notification after the user defines the value in percentage in the form
+               
 def azure_send_notification(cloud_provider, resource_type, utilization,azure_set_notification):
                     if utilization>azure_set_notification:
-                        print("Jay  Bajrang Bali")
                         message = f"{resource_type} Usage is High ({utilization}%) on {cloud_provider}"
                         requests.post("https://ntfy.sh/Cloud-Monitor", data=message.encode(encoding='utf-8'))
 
